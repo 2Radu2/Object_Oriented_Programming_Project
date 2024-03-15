@@ -1,0 +1,408 @@
+#include <iostream>
+#include <string>
+#include <cstdlib>
+#include <ctime>
+#include <limits>
+
+
+using namespace std;
+
+class BaseCharacter {
+protected:
+    int health_points;
+    int attack_points;
+    int defense_points;
+    int mana_points;
+
+public:
+    string name;
+    BaseCharacter(string n, int hp, int ap, int dp, int mp) : name(n), health_points(hp), attack_points(ap), defense_points(dp), mana_points(mp) {
+        name = n;
+        health_points = hp;
+        attack_points = ap;
+        defense_points = dp;
+        mana_points = mp;
+    }
+
+    // Getters and setters
+    string getName() {
+        return name;
+    }
+
+    int getHealthPoints() {
+        return health_points;
+    }
+
+    void setHealthPoints(int hp) {
+        health_points = hp;
+    }
+
+    int getAttackPoints() {
+        return attack_points;
+    }
+
+    void setAttackPoints(int ap) {
+        attack_points = ap;
+    }
+
+    int getDefensePoints() {
+        return defense_points;
+    }
+
+    void setDefensePoints(int dp) {
+        defense_points = dp;
+    }
+
+    int getManaPoints() {
+        return mana_points;
+    }
+
+    void setManaPoints(int mp) {
+        mana_points = mp;
+    }
+
+    // Virtual methods
+    virtual void attack(BaseCharacter* target) {
+        cout<<endl <<name << " attacks " << target->name << " for " << attack_points << " damage!" << endl;
+        target->takeDamage(attack_points);
+    }
+
+    void takeDamage(int damage) {                                    // Function takeDamage calculated the total damage
+        int total_damage = damage-(defense_points* damage/ 100);    //Based on the enemies defense points
+        health_points -= total_damage;
+        if (health_points< 0) {
+            health_points= 0;}
+
+
+        cout << name << " takes " <<total_damage << " damage!\n"<<endl;
+    }
+
+    virtual void specialAttack(BaseCharacter* target) {
+        cout <<"This character doesn't have a special attack."<< endl;
+    }
+
+    void heal(int amount, int manaCost) {
+        if (mana_points >= manaCost) {
+            health_points += amount;
+            mana_points -= manaCost;
+            cout<<endl << name <<" healed for " <<amount << " points!\n" << endl;
+        } else {
+            cout <<"Not enough mana to perform the healing."<< endl;
+        }
+    }
+
+
+    // Destructor
+    virtual ~BaseCharacter() {}
+};
+
+class Necromancer: public BaseCharacter {
+private:
+    int undead_army_size;
+
+public:
+    Necromancer(string n, int hp, int ap, int dp, int uas) : BaseCharacter(n, hp, ap, dp, 60), undead_army_size(uas) {
+        undead_army_size = uas;
+    }
+
+    int getUndeadArmySize() {
+        return undead_army_size;
+    }
+
+    void setUndeadArmySize(int uas) {
+        undead_army_size = uas;
+    }
+
+    void specialAttack(BaseCharacter* target) {     //necromancer special attack consumes maana and deals damage
+        if (mana_points >= 10) {                    //depending on the uas
+            cout << name<< " raises an undead army to attack " <<target->name << "!" << endl;
+            int total_damage = (attack_points/4) * undead_army_size - (attack_points * undead_army_size) * (target->getDefensePoints() / 100);
+            target->takeDamage(total_damage);
+            mana_points -=undead_army_size*10;
+        } else {
+            cout << "\nNot enough mana to perform the special attack." << endl;
+        }
+    }
+
+    //Destructor
+    ~Necromancer() {}
+};
+
+class Rogue: public BaseCharacter {
+private:
+    int arrows;
+
+public:
+    Rogue(string n, int hp, int ap, int dp, int a) : BaseCharacter(n, hp, ap, dp, 40), arrows(a) {
+        arrows = a;
+    }
+
+    int getArrows() {
+        return arrows;
+    }
+
+    void setArrows(int a) {
+        arrows = a;
+    }
+
+    void specialAttack(BaseCharacter* target) {
+        if (mana_points >= 5) {
+            if (arrows>0) {
+                cout <<name <<" shoots a poisoned arrow at "<< target->name <<"!"<<endl;
+                int total_damage= attack_points + 5 - (attack_points + 5) * (target->getDefensePoints() / 100);
+                target->takeDamage(total_damage);
+                arrows--;
+            } else {
+                cout << name << " is out of arrows!" << endl;
+                cout<< "\n Rogue pulls out a dagger";
+                attack(target);                     //a rogue can remain out of arrows
+            }
+            mana_points-=20;
+        } else {cout <<"Not enough mana to perform the special attack." << endl;
+        }
+    }
+    //Destructor
+    ~Rogue() {}
+};
+
+class Bruiser : public BaseCharacter {
+private:
+    double rage;
+
+public:
+    Bruiser(string n, int hp, int ap, int dp, double r) : BaseCharacter(n, hp, ap, dp, 80), rage(r) {
+        rage= r;
+    }
+
+    double getRage() {              //bruiser rage is nonregenerable and has 2 uses that means 2 special attack
+        return rage;
+    }
+
+    void setRage(double r) {
+        rage= r;
+    }
+
+    void specialAttack(BaseCharacter* target) {
+        if (rage >=0.5) {
+            cout<<name << " performs a powerful Sword Spin attack on " << target->name << "!" << endl;
+            int total_damage = attack_points+ 10 - (attack_points + 10)*(target->getDefensePoints()/ 100);
+            target->takeDamage(total_damage);
+            rage-= 0.5;
+        } else {
+            cout << name << " is not enraged enough to perform a special attack. Performing a normal attack." << endl;
+            attack(target);
+        }
+    }
+
+    //Destructor
+    ~Bruiser() {}
+};
+
+BaseCharacter* createCharacter() {
+    string name;
+    int hp, ap, dp, choice, i, m;
+
+    while (true) {
+        cout << " Enter Hero's name: ";
+        cin>>name;
+
+        bool valid_input= true;
+        for (char c:name) {
+            if (!isalpha(c) && c != ' ') {
+                valid_input =false;
+                cout << "Invalid input. Please enter only letters." << endl;
+                break;
+            }
+        }
+        if (valid_input) {
+            break;
+        }
+        cin.ignore(); //clear the newline character
+    }
+    cout << "The hero's name is: " << name << "!" << endl;
+
+    while (true) {
+        cout <<"Enter health points: " ;
+        cin>> hp;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+            cout << "Error: Invalid health points. Please enter a valid integer."<< endl;
+        }
+        else if (hp>100) {
+            cout <<"Error: Maximum health points allowed is 100." << endl;
+        }
+        else break;
+    }
+
+    while (true) {
+        cout << "Enter attack points: ";
+        cin >>ap;
+        if (cin.fail()) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(),'\n');
+            cout << "Error: Invalid attack points. Please enter a valid integer." << endl;
+        } else break;
+    }
+
+    cout <<"Enter defense points: ";
+    while (!(cin >>dp)) {
+        cin.clear();
+        cin.ignore(numeric_limits<streamsize>::max(), '\n');
+        cout<<"Error: Invalid defense points. Please enter a valid integer." << endl;
+        cout <<"Enter defense points: ";
+    }
+
+    cout<<"\n\tChoose character class:\n1. Necromancer\n2. Rogue\n3. Bruiser\n";
+    cin >> choice;
+    if (choice ==1) {
+        int uas;
+        cout<< "Enter undead army size: ";
+        cin >>uas;
+        return new Necromancer(name, hp, ap, dp, uas);
+    } else if (choice== 2) {
+        int a;
+        cout << "Enter number of arrows: "; cin >> a;
+        return new Rogue(name, hp, ap, dp, a);
+    } else if (choice == 3) {
+        double r;
+        cout << "Enter  rage level (between 0 and 1): "; cin>> r;
+        return new Bruiser(name, hp, ap, dp, r);
+    } else {
+        throw invalid_argument("Error: Invalid character class choice. Please enter a valid choice.");
+    }
+}
+// throw statement is used to explicitly throw an exception.
+// It allows you to signal that an exceptional condition has occurred during the execution of your code
+
+void printStats(BaseCharacter* c) {
+    cout<< "Name: " <<c->getName() << endl;
+    cout<< "Health Points: "<< c->getHealthPoints()<< endl;
+    cout << "Attack Points: " << c->getAttackPoints() <<endl;
+    cout<< "Defense Points: "<< c->getDefensePoints() << endl;
+    if (dynamic_cast<Necromancer*>(c)) {
+        cout << "Undead Army Size: " << dynamic_cast<Necromancer*>(c)->getUndeadArmySize()<< endl;
+    } else if (dynamic_cast<Rogue*>(c)) {
+        cout <<"Arrows: "<< dynamic_cast<Rogue*>(c)->getArrows()<< endl;
+    } else if (dynamic_cast<Bruiser*>(c)) {
+        cout << "Rage: " <<dynamic_cast<Bruiser*>(c)->getRage()<<endl;
+    }
+}
+
+void battle(BaseCharacter* c1, BaseCharacter* c2) {
+    while (c1->getHealthPoints() > 0 && c2->getHealthPoints() > 0) {
+        cout << c1->getName() << "'s turn:" << endl;
+        cout << "1. Attack\n2. Special Attack\n3. Heal\n4. Show Stats\n";
+        int choice;
+        cin >> choice;
+
+        if (choice== 1) {
+            c1->attack(c2);
+        } else if (choice== 2) {
+            c1->specialAttack(c2);
+        } else if (choice== 3) {
+            int manaCost = 20;
+            if (c1->getManaPoints() >= manaCost) {
+                int healAmount =c1->getManaPoints()/3;
+                healAmount = min(healAmount, 100-c1->getHealthPoints());  // Limit healing to stay below 100 health points
+                cout<< endl <<c1->getName()<< " uses healing magic and restores " << healAmount << " health points!\n" << endl;
+                c1->setHealthPoints(c1->getHealthPoints()+ healAmount);
+                c1->setManaPoints(c1->getManaPoints()-manaCost);
+            } else {
+               cout<< "Not enough mana to perform healing."<< endl;
+            }
+        } else if (choice == 4) {
+            cout<< endl << c1->getName() << "'s stats:" << endl;
+            cout<< "Health Points: "<< c1->getHealthPoints() << endl;
+            cout<< "Mana Points: "<< c1->getManaPoints() << endl << endl;
+        }
+
+        // Mana regeneration for Necromancer
+        if (dynamic_cast<Necromancer*>(c1)!= nullptr) {
+            Necromancer*necromancer =dynamic_cast<Necromancer*>(c1);
+            necromancer->setManaPoints(min(necromancer->getManaPoints() + 5, 60));
+        }
+        if (c2->getHealthPoints() <= 0) {
+            break;
+        }
+        cout<< c2->getName() << "'s turn:" << endl;
+        cout<<"1. Attack\n2. Special Attack\n3. Heal\n4. Show Stats\n";
+        cin >> choice;
+        if (choice ==1){
+            c2->attack(c1);
+        } else if (choice== 2) {
+            c2->specialAttack(c1);
+        }else if (choice==3) {
+            int manaCost =20;
+            if (c2->getManaPoints() >= manaCost) {
+                int healAmount = c2->getManaPoints()/ 3;
+                healAmount = min(healAmount, 100-c2->getHealthPoints());  // Limit healing to stay below 100 health points
+                cout << c2->getName() <<" uses healing magic and restores " << healAmount << " health points!" << endl;
+                c2->setHealthPoints(c2->getHealthPoints() +healAmount);
+                c2->setManaPoints(c2->getManaPoints()- manaCost);
+            } else {
+                cout<< "Not enough mana to perform healing." << endl;
+            }
+        } else if (choice== 4) {
+            cout << c2->getName() << "'s stats:" << endl;
+            cout << "Health Points: " << c2->getHealthPoints() << endl;
+            cout << "Mana Points: " << c2->getManaPoints() << endl;
+        }
+
+        // Mana regeneration for Rogue
+        if (dynamic_cast<Rogue*>(c2) != nullptr) {
+            Rogue* rogue = dynamic_cast<Rogue*>(c2);
+            rogue->setManaPoints(min(rogue->getManaPoints()+ 5, 40));
+        }
+        cout << endl;
+    }
+
+    if (c1->getHealthPoints()<=0) {
+        cout<< c2->getName() << " is the victor!" << endl;
+    } else if (c2->getHealthPoints() <= 0) {
+        cout<< c1->getName() <<" is the victor!" << endl;
+    }
+}
+
+
+int main() {
+    cout <<"\n\n*********************************************************************************************************";
+    cout <<"\n\t\t                       Welcome to Life in Adventure              \n ";
+    cout<< "                                              RULES                       \n\n";
+    cout<<"1. This game can be played by 2 players.\n";
+    cout<<"2. Each player must choose a name, health, attack and defense points before the game begins\n";
+    cout<<"3. The value introduced added can't be more that 100\n";
+    cout<<"4. Necromancer's troops consume their mana per special attack\n";
+    cout<<"5. Rogues have a 10 arrow capacity in their quiver\n";
+    cout<<"6. Bruiser's rage do not regenerate \n";
+    cout<<"7. WHEN A CHARACTER SHOWS STATS, THE OTHER ONE IS OBIGATED TOO\n\n";
+    cout << "\n\t\t                    Now let the battle begin!                    ";
+    cout <<"\n*********************************************************************************************************\n\n";
+
+    srand(time(nullptr)); // initializes the random number generator (srand) using the current time as the seed value.
+    BaseCharacter* c1 = nullptr;    //  It also declares two pointers c1 and c2 of type BaseCharacter and initializes them to nullptr
+    BaseCharacter* c2 = nullptr;
+
+    try {                          //this part of code handles exceptions that might occur
+        c1 = createCharacter();     //during character creation or the battle process.
+        c2 = createCharacter();     //If an exception occurs, it prints an error message, cleans up the dynamically allocated memory, and returns an error code.
+                                    // If no exceptions occur, it performs proper cleanup and returns a success code.
+        cout << "Character 1 Stats:\n";
+        printStats(c1);
+        cout << endl;
+        cout << "Character 2 Stats:\n";
+        printStats(c2);
+        cout << endl;
+        cout << "Let the battle begin!" << endl;
+        battle(c1, c2);
+    } catch (const invalid_argument& e) {
+        cout << "Error: " << e.what() << endl;
+        delete c1;
+        delete c2;
+        return 1;
+    }
+
+    delete c1;
+    delete c2;
+    return 0;
+}
